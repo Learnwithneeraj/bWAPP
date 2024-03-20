@@ -155,7 +155,12 @@ if(isset($_GET["language"]))
     else
     {
 
-        include($language);
+        // Validation and sanitization of $language to prevent path traversal vulnerabilities
+        // Remove any characters that could potentially be used to navigate up directories
+        $sanitized_language = preg_replace('/\.\.(\/|\\)/', '', $language);
+        if(in_array($sanitized_language, $available_languages)) {
+            include($sanitized_language);
+        }
 
     }
 
