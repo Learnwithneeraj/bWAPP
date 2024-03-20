@@ -3,76 +3,11 @@
 include("security.php");
 include("security_level_check.php");
 include("functions_external.php");
-include("admin/settings.php");
+include("selections.php");
 
-$bugs = file("bugs.txt");
+$language = "";
 
-if(isset($_POST["form_bug"]) && isset($_POST["bug"]))
-{
-
-            $key = $_POST["bug"];
-            $bug = explode(",", trim($bugs[$key]));
-
-            // Debugging
-            // print_r($bug);
-
-            header("Location: " . $bug[1]);
-
-            exit;
-
-}
-
-if(isset($_POST["form_security_level"]) && isset($_POST["security_level"]))
-{
-
-    $security_level_cookie = $_POST["security_level"];
-
-    switch($security_level_cookie)
-    {
-
-        case "0" :
-
-            $security_level_cookie = "0";
-            break;
-
-        case "1" :
-
-            $security_level_cookie = "1";
-            break;
-
-        case "2" :
-
-            $security_level_cookie = "2";
-            break;
-
-        default :
-
-            $security_level_cookie = "0";
-            break;
-
-    }
-
-    if($evil_bee == 1)
-    {
-
-        setcookie("security_level", "666", time()+60*60*24*365, "/", "", false, false);
-
-    }
-
-    else
-    {
-
-        setcookie("security_level", $security_level_cookie, time()+60*60*24*365, "/", "", false, false);
-
-    }
-
-    header("Location: directory_traversal_1.php?page=message.txt");
-
-    exit;
-
-}
-
-if(isset($_COOKIE["security_level"]))
+if(isset($_GET["language"]))
 {
 
     switch($_COOKIE["security_level"])
@@ -80,68 +15,31 @@ if(isset($_COOKIE["security_level"]))
 
         case "0" :
 
-            $security_level = "low";
+            $language = $_GET["language"];
+
             break;
 
         case "1" :
 
-            $security_level = "medium";
+            $language = $_GET["language"] . ".php";
+
             break;
 
         case "2" :
 
-            $security_level = "high";
-            break;
+            $available_languages = array("lang_en.php", "lang_fr.php", "lang_nl.php");
 
-        case "666" :
+            $language = $_GET["language"] . ".php";
 
-            $security_level = "666";
+            // $language = rlfi_check_1($language);
+
             break;
 
         default :
 
-            $security_level = "low";
+            $language = $_GET["language"];
+
             break;
-
-    }
-
-}
-
-else
-{
-
-    $security_level = "not set";
-
-}
-
-$file = "";
-$directory_traversal_error = "";
-
-function show_file($file)
-{
-
-    // Checks whether a file or directory exists
-    // if(file_exists($file))
-    if(is_file($file))
-    {
-
-        $fp = fopen($file, "r") or die("Couldn't open $file.");
-
-        while(!feof($fp))
-        {
-
-            $line = fgets($fp,1024);
-            echo($line);
-            echo "<br />";
-
-        }
-
-    }
-
-    else
-    {
-
-        echo "This file doesn't exist!";
 
     }
 
@@ -190,7 +88,7 @@ function show_file($file)
             <td><a href="credits.php">Credits</a></td>
             <td><a href="http://itsecgames.blogspot.com" target="_blank">Blog</a></td>
             <td><a href="logout.php" onclick="return confirm('Are you sure you want to leave?');">Logout</a></td>
-            <td><font color="red">Welcome <?php if(isset($_SESSION["login"])){echo ucwords($_SESSION["login"]);}?></font></td>
+            <td><font color="red">Welcome <?php if(isset($_SESSION["login"])){if(isset($_SESSION["login"])){echo ucwords($_SESSION["login"]);};}?></font></td>
 
         </tr>
 
@@ -200,88 +98,75 @@ function show_file($file)
 
 <div id="main">
 
-    <h1>Directory Traversal - Files</h1>
+    <h1>Remote & Local File Inclusion (RFI/LFI)</h1>
 
-    <?php
+    <form action="<?php echo($_SERVER["SCRIPT_NAME"]);?>" method="GET">
 
-    if(isset($_GET["page"]))
+        Select a language:
+
+        <select name="language">
+
+<?php
+
+if($_COOKIE["security_level"] == "1" || $_COOKIE["security_level"] == "2")
+{
+
+?>
+            <option value="lang_en">English</option>
+            <option value="lang_fr">Français</option>
+            <option value="lang_nl">Nederlands</option>
+
+<?php
+
+}
+
+else
+{
+
+?>
+            <option value="lang_en.php">English</option>
+            <option value="lang_fr.php">Français</option>
+            <option value="lang_nl.php">Nederlands</option>
+
+<?php
+
+}
+
+?>
+        </select>
+
+        <button type="submit" name="action" value="go">Go</button>
+
+    </form>
+
+    <br />
+<?php
+
+if(isset($_GET["language"]))
+{
+
+    if($_COOKIE["security_level"] == "2")
     {
 
-        $file = $_GET["page"];
+         if(in_array($language, $available_languages)) include($language);
 
-        switch($_COOKIE["security_level"])
-            {
+    }
 
-            case "0" :
+    else
+    {
 
-                show_file($file);
-
-                // Debugging
-                // echo "<br />" . $_GET['page'];
-
-                break;
-
-            case "1" :
-
-                $directory_traversal_error = directory_traversal_check_1($file);
-
-                if(!$directory_traversal_error)
-                {
-
-                    show_file($file);
-
-                }
-
-                else
-                {
-
-                    echo $directory_traversal_error;
-
-                }
-
-                // Debugging
-                // echo "<br />" . $_GET["page"];
-
-                break;
-
-            case "2" :
-
-                $directory_traversal_error = directory_traversal_check_3($file);
-
-                if(!$directory_traversal_error)
-                {
-
-                    show_file($file);
-
-                }
-
-                else
-                {
-
-                    echo $directory_traversal_error;
-
-                }
-
-                // Debugging
-                // echo "<br />" . $_GET["page"];
-
-                break;
-
-            default :
-
-                show_file($file);
-
-                // Debugging
-                // echo "<br />" . $_GET["page"];
-
-                break;
-
+        // Validation and sanitization of $language to prevent path traversal vulnerabilities
+        // Remove any characters that could potentially be used to navigate up directories
+        $sanitized_language = preg_replace('/\.\.(\/|\\)/', '', $language);
+        if(in_array($sanitized_language, $available_languages)) {
+            include($sanitized_language);
         }
 
     }
 
-    ?>
+}
 
+?>
 
 </div>
 
@@ -294,6 +179,11 @@ function show_file($file)
 
 </div>
 
+<div id="disclaimer">
+
+    <p>bWAPP is licensed under <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank"><img style="vertical-align:middle" src="./images/cc.png"></a> &copy; 2014 MME BVBA / Follow <a href="http://twitter.com/MME_IT" target="_blank">@MME_IT</a> on Twitter and ask for our cheat sheet, containing all solutions! / Need an exclusive <a href="http://www.mmebvba.com" target="_blank">training</a>?</p>
+
+</div>
 
 <div id="bee">
 
